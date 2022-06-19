@@ -54,8 +54,17 @@ export default class Left extends Side {
      *
      * @return {void}
      */
-    append(item) {
+    inEnd(item) {
         this.wrapper.prepend(item);
+    }
+
+    /**
+     * @param {HTMLElement} item
+     *
+     * @return {void}
+     */
+    atBeginning(item) {
+        this.wrapper.append(item);
     }
 
     /**

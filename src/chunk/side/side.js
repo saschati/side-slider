@@ -55,7 +55,16 @@ export default class Side {
      *
      * @return {void}
      */
-    append(item) {
+    inEnd(item) {
+        throw new Error('Not implemented');
+    }
+
+    /**
+     * @param {HTMLElement} item
+     *
+     * @return {void}
+     */
+    atBeginning(item) {
         throw new Error('Not implemented');
     }
 

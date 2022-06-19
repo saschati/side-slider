@@ -7,6 +7,7 @@ import isEmpty from "lodash/isEmpty";
 
 import Animate from "./animate/animate";
 import linage from "./animate/timing/linage";
+import reverse from "./animate/timing/reverse";
 import runnerHide from "./animate/animation/runner/hide";
 import nextRun from "./animate/animation/next/run";
 
@@ -33,45 +34,80 @@ export default class SideSlider {
      * }} options
      */
     options = {
-        duration: 5000,
+        autoplay: {
+            reverse: false,
+            duration: 5000,
+            delay: 0,
+            active: true,
+            chain: true,
+            delayedStart: {
+                disabled: false,
+                delay: 10000,
+                id: null,
+            },
+        },
         runner: {
             wait: 50,
             animates: runnerHide,
             mutation: {
-                active: function (item) {
-                    item.classList.remove('is-active');
-                    item.classList.remove('is-visible');
-
-                    item.classList.add('is-runner');
-                },
-                hide: function (item) {
-                    item.classList.remove('is-runner');
-                }
+                active: null,
+                hide: null,
             }
         },
         next: {
-            delay: 0,
             visible: null,
-            chain: true,
             animates: nextRun,
             mutation: {
-                active: function (item) {
-                    item.classList.add('is-active');
-                },
-                visible: function (item) {
-                    item.classList.add('is-visible');
-                }
+                active: null,
+                visible: null,
             }
         },
+        client: {
+            reverse: false,
+            duration: 750,
+            minDuration: 250,
+            delay: 0,
+            chain: true,
+            flexibleClick: true,
+            button: {
+                prev: null,
+                next: null,
+            },
+        },
         timing: linage,
+        reverse: reverse,
         animate: Animate,
     }
 
     current = null;
     next = null;
 
-    runnerAnimations = [];
-    nextAnimations = [];
+    autoplay = {
+        isFlushed: false,
+
+        nextDuration: 0,
+        runnerDuration: 0,
+
+        runnerAnimations: [],
+        nextAnimations: [],
+    };
+
+    client = {
+        isFlushed: false,
+
+        click: {
+            prevent: false,
+            bug: [],
+
+            prevTime: null,
+            delayPercent: 0,
+
+            inEnd: true,
+        },
+
+        runnerAnimations: [],
+        nextAnimations: [],
+    };
 
     /**
      * @param {HTMLElement} wrapper
@@ -104,24 +140,11 @@ export default class SideSlider {
         this.distance = this.direction.getDistance();
         this.current = this.direction.getFirstCurrent();
 
-        const {runner, next, duration} = this.options;
+        const {next, autoplay: autoplayOptions, client: clientOptions} = this.options;
 
-        if (!(runner.mutation.active instanceof Function)) {
-            throw new Error('Примісі повині бути функціями.');
-        }
+        this.attachMutation();
 
-        if (!(next.mutation.active instanceof Function) || !(next.mutation.visible instanceof Function)) {
-            throw new Error('Примісі повині бути функціями.');
-        }
-
-        this.nextDuration = (duration - next.delay);
-        this.runnerDuration = duration;
-
-        if (this.nextDuration <= 0) {
-            throw new Error('Очікування не моеже бути більше/дорівнювати часу анімації');
-        }
-
-        if (next.chain === true) {
+        if (autoplayOptions.chain === true || clientOptions.chain === true) {
             if (isEmpty(next.visible) === true) {
                 let visible = 0;
                 for (const item of this.direction.getItems()) {
@@ -134,23 +157,114 @@ export default class SideSlider {
             if (isInteger(next.visible) === false) {
                 throw new Error('З видними елементами щось нетак.');
             }
-
-            this.nextDuration = (this.nextDuration / next.visible);
         }
 
-        this.parseAnimation(runner, this.runnerAnimations, this.runnerDuration);
-        this.parseAnimation(next, this.nextAnimations, this.nextDuration);
+        if (clientOptions.delay > 0 && clientOptions.flexibleClick === true) {
+            this.client.click.delayPercent = (1 - ((clientOptions.duration - clientOptions.delay) / clientOptions.duration));
+        }
 
-        this.nextSlide();
+        if (autoplayOptions.active === false && (clientOptions.button.prev === null && clientOptions.button.next)) {
+            throw new Error('Стрічка не працююча, автопрограх виключений і не передано жодного обробника руху.');
+        }
+
+        if (autoplayOptions.active === true) {
+            this.runAutoplay();
+        }
+
+        if (clientOptions.button.next !== null) {
+            clientOptions.button.next.addEventListener('click', (evt) => {
+                this.delayedAutoplay();
+
+                const {click} = this.client;
+
+                let duration = click.duration;
+                let delay = clientOptions.delay;
+
+                if (clientOptions.flexibleClick === true) {
+                    let nowTime = performance.now();
+
+                    if (click.prevTime === null || ((nowTime - click.prevTime) > clientOptions.duration)) {
+                        click.prevTime = (performance.now() - clientOptions.duration);
+                    }
+
+                    duration = (nowTime - click.prevTime);
+
+                    click.prevTime = nowTime;
+                    if (duration < clientOptions.minDuration) {
+                        duration = clientOptions.minDuration;
+                    }
+
+                    delay = (duration * this.client.click.delayPercent);
+                }
+
+                this.client.click.bug.push([duration, delay]);
+
+                this.flushClientClick();
+            });
+        }
     }
 
-    async nextSlide() {
+    async runAutoplay() {
+        const {runner, next, autoplay: options} = this.options;
+
+        options.active = true;
+
+        this.autoplay.nextDuration = (options.duration - options.delay);
+        this.autoplay.runnerDuration = options.duration;
+
+        this.autoplay.runnerAnimations = [];
+        this.autoplay.nextAnimations = [];
+
+        if (this.autoplay.nextDuration <= 0) {
+            throw new Error('Очікування не моеже бути більше/дорівнювати часу анімації');
+        }
+
+        if (options.chain === true) {
+            this.autoplay.nextDuration = (this.autoplay.nextDuration / next.visible);
+        }
+
+        this.parseAnimation(runner, this.autoplay.runnerAnimations, this.autoplay.runnerDuration, options.reverse);
+        this.parseAnimation(next, this.autoplay.nextAnimations, this.autoplay.nextDuration, options.reverse);
+
+        this.flushAutoplay();
+    }
+
+    stopAutoplay() {
+        const options = this.options.autoplay;
+
+        options.active = false;
+
+        if (options.delayedStart.id !== null) {
+            clearTimeout(options.delayedStart.id);
+        }
+    }
+
+    async delayedAutoplay() {
+        const options = this.options.autoplay;
+
+        if (options.delayedStart.id !== null || options.active === true) {
+            this.stopAutoplay();
+
+            if (options.delayedStart.disabled === true) {
+                return;
+            }
+
+            options.delayedStart.id = setTimeout(() => {
+                options.delayedStart.id = null;
+                options.active = true;
+
+                this.flushAutoplay();
+            }, options.delayedStart.delay);
+        }
+    }
+
+    async nextSlide({runnerAnimations, nextAnimations, runnerDuration, nextDuration, delay, chain}) {
         this.next = this.direction.getNextSibling(this.current);
 
         this.options.runner.mutation.active(this.current);
         this.options.next.mutation.active(this.next);
 
-        let timeout = this.options.next.delay;
+        let timeout = delay;
         let count = 0;
         for (const item of this.direction.getItems()) {
             const next = this.direction.getNextSibling(item);
@@ -161,11 +275,11 @@ export default class SideSlider {
             this.options.next.mutation.visible(next);
 
             const info = this.direction.getNextInfo({prev: item, current: next});
-            const [animation] = this.nextAnimations;
+            const [animation] = nextAnimations;
 
             const _animation = cloneDeep(animation);
 
-            if (this.options.next.chain === false) {
+            if (chain === false) {
                 setTimeout(() => {
                     _animation.begin(info);
                 }, timeout);
@@ -177,29 +291,97 @@ export default class SideSlider {
                 _animation.begin(info);
             }, timeout);
 
-            timeout = ((++count * this.nextDuration) + this.options.next.delay);
+            timeout = ((++count * nextDuration) + delay);
         }
 
-        const [animation] = this.runnerAnimations;
+        const [animation] = runnerAnimations;
         const _animation = cloneDeep(animation);
         const info = this.direction.getRunnerInfo({current: this.current, distance: this.distance});
 
         _animation.begin(info);
 
-        setTimeout(() => this.slideItem(), (this.runnerDuration + (this.options.runner.wait * 2)));
+        setTimeout(
+            () => this.slideItem(),
+            (runnerDuration + (this.options.runner.wait * 2))
+        );
     }
 
     slideItem() {
-        this.direction.append(this.current);
+        this.direction.inEnd(this.current);
         this.options.runner.mutation.hide(this.current);
 
         for (const item of this.direction.getItems()) {
             item.removeAttribute('style');
         }
 
+        this.client.isFlushed = false;
+        this.autoplay.isFlushed = false;
+
         this.current = this.next;
 
-        this.nextSlide();
+        this.flushAutoplay();
+        this.flushClientClick();
+    }
+
+    async flushClientClick() {
+        const {click} = this.client;
+        const {next, runner, client: options} = this.options;
+
+        if (click.bug.length === 0 || this.client.isFlushed === true || this.autoplay.isFlushed === true) {
+            return;
+        }
+
+        if (click.prevent === true) {
+            click.bug = [];
+            click.prevent = false;
+
+            return;
+        }
+
+        this.client.isFlushed = true;
+
+        this.client.runnerAnimations = [];
+        this.client.nextAnimations = [];
+
+        const [duration, delay] = click.bug.shift();
+
+        let runnerDuration = duration;
+        let nextDuration = (duration - delay);
+
+        if (options.chain === true) {
+            nextDuration = (nextDuration / next.visible);
+        }
+
+        this.parseAnimation(runner, this.client.runnerAnimations, runnerDuration);
+        this.parseAnimation(next, this.client.nextAnimations, nextDuration);
+
+        this.nextSlide({
+            runnerAnimations: this.client.runnerAnimations,
+            nextAnimations: this.client.nextAnimations,
+            runnerDuration: runnerDuration,
+            nextDuration: nextDuration,
+            delay: delay,
+            chain: options.chain,
+        });
+    }
+
+    async flushAutoplay() {
+        const options = this.options.autoplay;
+
+        if (options.active === false || this.autoplay.isFlushed === true || this.client.isFlushed === true) {
+            return;
+        }
+
+        this.autoplay.isFlushed = true;
+
+        this.nextSlide({
+            runnerAnimations: this.autoplay.runnerAnimations,
+            nextAnimations: this.autoplay.nextAnimations,
+            runnerDuration: this.autoplay.runnerDuration,
+            nextDuration: this.autoplay.nextDuration,
+            delay: options.delay,
+            chain: options.chain
+        });
     }
 
     isVisible(item) {
@@ -224,11 +406,13 @@ export default class SideSlider {
             itemPosition.left < windowPosition.right;
     }
 
-    parseAnimation(subject, collection, duration) {
+    parseAnimation(subject, collection, duration, isReverse = false) {
         if (subject.animates instanceof Function) {
+            const timing = isReverse === true ? this.options.reverse(this.options.timing) : this.options.timing;
+
             const animation = new this.options.animate({
                 duration: duration,
-                timing: this.options.timing,
+                timing: timing,
                 draw: subject.animates,
             });
 
@@ -261,9 +445,14 @@ export default class SideSlider {
         orderBy(subject.animates, ['progress'], ['desc']).forEach(item => {
             const animateConf = progressDuration.find(conf => conf.progress === item.progress);
 
+            let timing = item.timing || this.options.timing;
+            if (isReverse === true) {
+                timing = this.options.reverse(timing)
+            }
+
             const animation = new this.options.animate({
                 duration: animateConf.duration,
-                timing: item.timing || this.options.timing,
+                timing: timing,
                 draw: item.draw,
                 next: nextAnimation
             });
@@ -272,5 +461,36 @@ export default class SideSlider {
 
             nextAnimation = animation;
         });
+    }
+
+    attachMutation() {
+        const {runner, next} = this.options;
+
+        runner.mutation.active ??= function (item) {
+            item.classList.remove('is-active');
+            item.classList.remove('is-visible');
+
+            item.classList.add('is-runner');
+        }
+
+        runner.mutation.hide ??= function (item) {
+            item.classList.remove('is-runner');
+        }
+
+        next.mutation.active ??= function (item) {
+            item.classList.add('is-active');
+        }
+
+        next.mutation.visible ??= function (item) {
+            item.classList.add('is-visible');
+        }
+
+        if (!(runner.mutation.active instanceof Function) || !(runner.mutation.hide instanceof Function)) {
+            throw new Error('Примісі повині бути функціями.');
+        }
+
+        if (!(next.mutation.active instanceof Function) || !(next.mutation.visible instanceof Function)) {
+            throw new Error('Примісі повині бути функціями.');
+        }
     }
 }
