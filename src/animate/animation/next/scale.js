@@ -1,21 +1,8 @@
 import round from 'lodash/round';
+import percent from "../../helpers/percent";
 
 import linage from "../../timing/linage";
 import reverse from "../../timing/reverse";
-
-function scale(progress) {
-    let size = round((((progress * 100) / 100)), 2);
-
-    if (size > 1) {
-        size = 1;
-    }
-
-    if (size < 0) {
-        size = 0;
-    }
-
-    return (1 - size);
-}
 
 export default [
     {
@@ -27,7 +14,7 @@ export default [
          * @return {void}
          */
         draw: function (info, progress) {
-            info.getCurrent().style.transform = `scale(-${scale(progress)})`;
+            info.getCurrent().style.transform = `scale(-${percent(progress)})`;
         },
     },
     {
@@ -40,7 +27,7 @@ export default [
          * @return {void}
          */
         draw: function (info, progress) {
-            info.getCurrent().style.transform = `translate(${info.getSiblingDistance()}px, 0) scale(-${scale(progress)})`;
+            info.getCurrent().style.transform = `translate(${info.getSiblingDistance()}px, 0) scale(-${percent(progress)})`;
         },
     }
 ];

@@ -1,4 +1,4 @@
-import hide from './hide';
+import percent from "../../helpers/percent";
 
 /**
  * @param {Info} info
@@ -7,7 +7,10 @@ import hide from './hide';
  * @return {void}
  */
 export default function left(info, progress) {
-    info.getCurrent().style.transform = `translate(-${progress * info.getHorizon()}px, 0)`;
+    let x = -(progress * info.getHorizon());
 
-    hide(info, progress);
+    x += info.getReverseFinishedPosition();
+
+    info.getCurrent().style.transform = `translate(${x}px, 0)`;
+    info.getCurrent().style.opacity = percent(progress, 3);
 }

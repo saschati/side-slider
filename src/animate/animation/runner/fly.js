@@ -1,12 +1,7 @@
 import round from 'lodash/round';
 
-export default function (right = false) {
-    let height;
-    let left;
-    let rotate;
-
-    const retreat = right ? '-' : '';
-    const move = right ? '' : '-';
+export default function (right = true) {
+    let move = right ? '' : '-';
 
     /**
      * @param {Info} info
@@ -15,11 +10,12 @@ export default function (right = false) {
      * @return {void}
      */
     function fly(info, progress) {
-        height = round((progress * info.getCurrent().offsetHeight));
-        left = round((progress * 50));
-        rotate = round((progress * 90));
+        let height = round((progress * info.getCurrent().offsetHeight));
+        let rotate = round((progress * 90));
 
-        info.getCurrent().style.transform = `translate(${retreat}${left}px, ${height}px) rotate(${rotate}deg)`;
+        let x = info.getReverseFinishedPosition();
+
+        info.getCurrent().style.transform = `translate(${x}px, ${height}px) rotate(${rotate}deg)`;
     }
 
     /**
@@ -29,9 +25,20 @@ export default function (right = false) {
      * @return {void}
      */
     function run(info, progress) {
-        const x = (progress * (info.getHorizon() + info.getCurrent().offsetHeight));
+        let x = (progress * (info.getHorizon() + info.getCurrent().offsetHeight));
+        let height = info.getCurrent().offsetHeight;
 
-        info.getCurrent().style.transform = `translate(${move}${x - left}px, ${height}px) rotate(${rotate}deg)`;
+        if (info.isReverse() === true) {
+            x -= info.getHorizon();
+            x += info.getHorizonHideDistance();
+        }
+
+        if (x < 0 && right === false) {
+            move = '';
+            x = Math.abs(x);
+        }
+
+        info.getCurrent().style.transform = `translate(${move}${x}px, ${height}px) rotate(90deg)`;
     }
 
     return [

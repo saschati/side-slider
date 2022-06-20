@@ -1,11 +1,22 @@
 import Info from "./info";
 
 export default class RightInfo extends Info {
-    constructor({current, distance}) {
-        super({current, distance});
+    constructor({current, shift, windowWidth, reverse}) {
+        super({current, shift, windowWidth, reverse});
 
-        this.horizon = ((global.pageXOffset + document.documentElement.clientWidth) - current.getBoundingClientRect().left);
-        this.distance = (this.distance - this.current.offsetLeft);
+        this.horizonHideDistance = 0;
+        this.reverseFinishedPosition = 0;
+
+        if (this.reverse === true) {
+            this.horizon = (this.windowWidth - shift.getBoundingClientRect().left);
+            this.distance = (this.current.offsetLeft - shift.offsetLeft)
+
+            this.horizonHideDistance = (this.windowWidth - current.getBoundingClientRect().left);
+            this.reverseFinishedPosition -= this.distance;
+        } else {
+            this.horizon = (this.windowWidth - current.getBoundingClientRect().left);
+            this.distance = (shift.offsetLeft - this.current.offsetLeft);
+        }
     }
 
     /**
@@ -20,5 +31,19 @@ export default class RightInfo extends Info {
      */
     getHorizon() {
         return this.horizon;
+    }
+
+    /**
+     * @return {number}
+     */
+    getHorizonHideDistance() {
+        return this.horizonHideDistance;
+    }
+
+    /**
+     * @return {number}
+     */
+    getReverseFinishedPosition() {
+        return this.reverseFinishedPosition;
     }
 }

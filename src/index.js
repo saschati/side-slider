@@ -43,7 +43,6 @@ export default class SideSlider {
             delayedStart: {
                 disabled: false,
                 delay: 10000,
-                id: null,
             },
         },
         runner: {
@@ -82,8 +81,14 @@ export default class SideSlider {
     current = null;
     next = null;
 
+    isReverse = false;
+
     autoplay = {
         isFlushed: false,
+
+        delayedStart: {
+            id: null,
+        },
 
         nextDuration: 0,
         runnerDuration: 0,
@@ -137,8 +142,7 @@ export default class SideSlider {
     }
 
     async run() {
-        this.distance = this.direction.getDistance();
-        this.current = this.direction.getFirstCurrent();
+        this.windowWidth = (global.pageXOffset + document.documentElement.clientWidth);
 
         const {next, autoplay: autoplayOptions, client: clientOptions} = this.options;
 
@@ -212,6 +216,10 @@ export default class SideSlider {
         this.autoplay.nextDuration = (options.duration - options.delay);
         this.autoplay.runnerDuration = options.duration;
 
+        if (options.reverse === true) {
+            this.autoplay.runnerDuration -= options.delay;
+        }
+
         this.autoplay.runnerAnimations = [];
         this.autoplay.nextAnimations = [];
 
@@ -224,7 +232,7 @@ export default class SideSlider {
         }
 
         this.parseAnimation(runner, this.autoplay.runnerAnimations, this.autoplay.runnerDuration, options.reverse);
-        this.parseAnimation(next, this.autoplay.nextAnimations, this.autoplay.nextDuration, options.reverse);
+        this.parseAnimation(next, this.autoplay.nextAnimations, this.autoplay.nextDuration);
 
         this.flushAutoplay();
     }
@@ -234,23 +242,23 @@ export default class SideSlider {
 
         options.active = false;
 
-        if (options.delayedStart.id !== null) {
-            clearTimeout(options.delayedStart.id);
+        if (this.autoplay.delayedStart.id !== null) {
+            clearTimeout(this.autoplay.delayedStart.id);
         }
     }
 
     async delayedAutoplay() {
         const options = this.options.autoplay;
 
-        if (options.delayedStart.id !== null || options.active === true) {
+        if (this.autoplay.delayedStart.id !== null || options.active === true) {
             this.stopAutoplay();
 
             if (options.delayedStart.disabled === true) {
                 return;
             }
 
-            options.delayedStart.id = setTimeout(() => {
-                options.delayedStart.id = null;
+            this.autoplay.delayedStart.id = setTimeout(() => {
+                this.autoplay.delayedStart.id = null;
                 options.active = true;
 
                 this.flushAutoplay();
@@ -258,17 +266,33 @@ export default class SideSlider {
         }
     }
 
-    async nextSlide({runnerAnimations, nextAnimations, runnerDuration, nextDuration, delay, chain}) {
+    async nextSlide({runnerAnimations, nextAnimations, runnerDuration, nextDuration, delay, chain, isReverse = false}) {
+        if (isReverse !== this.isReverse) {
+            this.isReverse = isReverse;
+
+            this.current = null;
+        }
+
+        this.direction.setReverse(this.isReverse);
+
+        this.current ??= this.direction.getFirstCurrent();
         this.next = this.direction.getNextSibling(this.current);
 
         this.options.runner.mutation.active(this.current);
         this.options.next.mutation.active(this.next);
 
-        let timeout = delay;
+        let timeout = 0;
         let count = 0;
+        if (this.isReverse === false) {
+            timeout += delay;
+        }
         for (const item of this.direction.getItems()) {
             const next = this.direction.getNextSibling(item);
-            if (this.isVisible(item) === false || next === null) {
+            if (next === null) {
+                continue;
+            }
+
+            if (this.isVisible(item) === false && (this.isReverse === true && this.isVisible(next) === false)) {
                 continue;
             }
 
@@ -291,14 +315,26 @@ export default class SideSlider {
                 _animation.begin(info);
             }, timeout);
 
-            timeout = ((++count * nextDuration) + delay);
+            timeout = (++count * nextDuration);
+
+            if (this.isReverse === false) {
+                timeout += delay;
+            }
         }
 
         const [animation] = runnerAnimations;
         const _animation = cloneDeep(animation);
-        const info = this.direction.getRunnerInfo({current: this.current, distance: this.distance});
+        const info = this.direction.getRunnerInfo({
+            current: this.current,
+            shift: this.direction.getShift(),
+            windowWidth: this.windowWidth
+        });
 
-        _animation.begin(info);
+        setTimeout(() => _animation.begin(info), (this.isReverse === true ? delay : 0));
+
+        if (this.isReverse === true) {
+            runnerDuration += delay;
+        }
 
         setTimeout(
             () => this.slideItem(),
@@ -307,7 +343,7 @@ export default class SideSlider {
     }
 
     slideItem() {
-        this.direction.inEnd(this.current);
+        this.direction.insert(this.current);
         this.options.runner.mutation.hide(this.current);
 
         for (const item of this.direction.getItems()) {
@@ -380,7 +416,8 @@ export default class SideSlider {
             runnerDuration: this.autoplay.runnerDuration,
             nextDuration: this.autoplay.nextDuration,
             delay: options.delay,
-            chain: options.chain
+            chain: options.chain,
+            isReverse: options.reverse
         });
     }
 
@@ -442,7 +479,8 @@ export default class SideSlider {
         });
 
         let nextAnimation = null;
-        orderBy(subject.animates, ['progress'], ['desc']).forEach(item => {
+        const order = (isReverse === true) ? 'asc' : 'desc';
+        orderBy(subject.animates, ['progress'], [order]).forEach(item => {
             const animateConf = progressDuration.find(conf => conf.progress === item.progress);
 
             let timing = item.timing || this.options.timing;

@@ -1,4 +1,5 @@
 import round from 'lodash/round';
+import percent from "../../helpers/percent";
 
 import run from "./run";
 
@@ -12,19 +13,7 @@ import reverse from "../../timing/reverse";
  * @return {void}
  */
 function hide(info, progress) {
-    let opacity = round((((progress * 100) / 100)), 2);
-
-    if (opacity > 1) {
-        opacity = 1;
-    }
-
-    if (opacity < 0) {
-        opacity = 0;
-    }
-
-    opacity = 1 - opacity;
-
-    info.getCurrent().style.opacity = `${opacity}`;
+    info.getCurrent().style.opacity = percent(progress);
 }
 
 /**

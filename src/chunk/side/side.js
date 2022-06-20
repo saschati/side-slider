@@ -10,12 +10,22 @@ export default class Side {
     }
 
     /**
+     * @param {boolean} reverse
+     *
+     * @return {void}
+     */
+    setReverse(reverse) {
+        this.reverse = reverse;
+    }
+
+    /**
      * @param {HTMLElement} current
-     * @param {number} distance
+     * @param {HTMLElement} shift
+     * @param {number} windowWidth
      *
      * @return {RunnerInfo}
      */
-    getRunnerInfo({current, distance}) {
+    getRunnerInfo({current, shift, windowWidth}) {
         throw new Error('Not implemented');
     }
 
@@ -30,9 +40,9 @@ export default class Side {
     }
 
     /**
-     * @return {number}
+     * @return {HTMLElement}
      */
-    getDistance() {
+    getShift() {
         throw new Error('Not implemented');
     }
 
@@ -44,6 +54,8 @@ export default class Side {
     }
 
     /**
+     * @param {HTMLElement} item
+     *
      * @return {HTMLElement}
      */
     getNextSibling(item) {
@@ -55,16 +67,7 @@ export default class Side {
      *
      * @return {void}
      */
-    inEnd(item) {
-        throw new Error('Not implemented');
-    }
-
-    /**
-     * @param {HTMLElement} item
-     *
-     * @return {void}
-     */
-    atBeginning(item) {
+    insert(item) {
         throw new Error('Not implemented');
     }
 

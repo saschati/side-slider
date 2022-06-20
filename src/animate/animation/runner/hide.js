@@ -1,4 +1,4 @@
-import round from 'lodash/round';
+import percent from "../../helpers/percent";
 
 /**
  * @param {Info} info
@@ -7,13 +7,6 @@ import round from 'lodash/round';
  * @return {void}
  */
 export default function hide(info, progress) {
-    let opacity = round((((progress * (100 * 3)) / 100)), 2);
-
-    if (opacity > 1) {
-        opacity = 1;
-    }
-
-    opacity = 1 - opacity;
-
-    info.getCurrent().style.opacity = `${opacity}`;
+    info.getCurrent().style.opacity = percent(progress, 3);
+    info.getCurrent().style.transform = `translate(${info.getReverseFinishedPosition()}px, 0)`;
 }

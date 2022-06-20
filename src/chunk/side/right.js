@@ -4,15 +4,22 @@ import NextInfo from "../info/next/right-info"
 import RunnerInfo from "../info/runner/right-info"
 
 export default class Right extends Side {
+    /**
+     * @param {HTMLElement} wrapper
+     */
     constructor({wrapper}) {
         super({wrapper});
     }
 
     /**
-     * @return {RightInfo}
+     * @param {HTMLElement} current
+     * @param {HTMLElement} shift
+     * @param {number} windowWidth
+     *
+     * @return {RunnerInfo}
      */
-    getRunnerInfo({current, distance}) {
-        return new RunnerInfo({current, distance});
+    getRunnerInfo({current, shift, windowWidth}) {
+        return new RunnerInfo({current, shift, windowWidth, reverse: this.reverse});
     }
 
     /**
@@ -22,27 +29,41 @@ export default class Right extends Side {
      * @return {NextInfo}
      */
     getNextInfo({prev, current}) {
-        return new NextInfo({prev, current});
+        return new NextInfo({prev, current, reverse: this.reverse});
     }
 
     /**
-     * @return {number}
+     * @return {HTMLElement}
      */
-    getDistance() {
-        return this.wrapper.lastElementChild.offsetLeft;
+    getShift() {
+        if (this.reverse === true) {
+            return this.wrapper.firstElementChild;
+        }
+
+        return this.wrapper.lastElementChild;
     }
 
     /**
      * @return {HTMLElement}
      */
     getFirstCurrent() {
+        if (this.reverse === true) {
+            return this.wrapper.lastElementChild;
+        }
+
         return this.wrapper.firstElementChild;
     }
 
     /**
+     * @param {HTMLElement} item
+     *
      * @return {HTMLElement}
      */
     getNextSibling(item) {
+        if (this.reverse === true) {
+            return item.previousElementSibling;
+        }
+
         return item.nextElementSibling;
     }
 
@@ -51,23 +72,26 @@ export default class Right extends Side {
      *
      * @return {void}
      */
-    inEnd(item) {
-        this.wrapper.append(item);
-    }
+    insert(item) {
+        if (this.reverse === true) {
+            this.wrapper.prepend(item);
 
-    /**
-     * @param {HTMLElement} item
-     *
-     * @return {void}
-     */
-    atBeginning(item) {
-        this.wrapper.prepend(item);
+            return;
+        }
+
+        this.wrapper.append(item);
     }
 
     /**
      * @return {HTMLElement[]}
      */
     getItems() {
-        return Array.from(this.wrapper.children);
+        let items = Array.from(this.wrapper.children);
+
+        if (this.reverse === true) {
+            items = items.reverse();
+        }
+
+        return items;
     }
 }

@@ -1,8 +1,8 @@
 import round from "lodash/round";
-import hide from "./hide";
+import percent from "../../helpers/percent";
 
 export default function (right = true) {
-    const minus = right ? '' : '-';
+    let minus = right ? '' : '-';
 
     /**
      * @param {Info} info
@@ -12,11 +12,14 @@ export default function (right = true) {
      */
     return function castOut(info, progress) {
         const rotate = round((progress * (360 * 4)));
-        const x = (progress * info.getHorizon());
         const y = (progress * info.getHorizon());
+        let x = (progress * info.getHorizon());
+
+        if (info.isReverse() === true) {
+            x += Math.abs(info.getReverseFinishedPosition());
+        }
 
         info.getCurrent().style.transform = `translate(${minus}${x}px, ${y}px) rotate(${minus}${rotate}deg) `;
-
-        hide(info, progress);
+        info.getCurrent().style.opacity = percent(progress, 3);
     }
 }

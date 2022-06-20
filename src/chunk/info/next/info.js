@@ -2,10 +2,12 @@ export default class Info {
     /**
      * @param {HTMLElement} prev
      * @param {HTMLElement} current
+     * @param {boolean} reverse
      */
-    constructor({prev, current}) {
+    constructor({prev, current, reverse}) {
         this.prev = prev;
         this.current = current;
+        this.reverse = reverse;
     }
 
     /**
@@ -20,5 +22,12 @@ export default class Info {
      */
     getCurrent() {
         return this.current;
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isReverse() {
+        return this.reverse === true;
     }
 }
