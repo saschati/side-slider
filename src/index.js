@@ -50,7 +50,7 @@ export default class SideSlider {
             animates: runnerHide,
             mutation: {
                 active: null,
-                hide: null,
+                done: null,
             }
         },
         next: {
@@ -62,7 +62,6 @@ export default class SideSlider {
             }
         },
         client: {
-            reverse: false,
             duration: 750,
             minDuration: 250,
             delay: 0,
@@ -107,7 +106,7 @@ export default class SideSlider {
             prevTime: null,
             delayPercent: 0,
 
-            inEnd: true,
+            reverse: false,
         },
 
         runnerAnimations: [],
@@ -177,35 +176,51 @@ export default class SideSlider {
 
         if (clientOptions.button.next !== null) {
             clientOptions.button.next.addEventListener('click', (evt) => {
-                this.delayedAutoplay();
-
-                const {click} = this.client;
-
-                let duration = click.duration;
-                let delay = clientOptions.delay;
-
-                if (clientOptions.flexibleClick === true) {
-                    let nowTime = performance.now();
-
-                    if (click.prevTime === null || ((nowTime - click.prevTime) > clientOptions.duration)) {
-                        click.prevTime = (performance.now() - clientOptions.duration);
-                    }
-
-                    duration = (nowTime - click.prevTime);
-
-                    click.prevTime = nowTime;
-                    if (duration < clientOptions.minDuration) {
-                        duration = clientOptions.minDuration;
-                    }
-
-                    delay = (duration * this.client.click.delayPercent);
-                }
-
-                this.client.click.bug.push([duration, delay]);
-
-                this.flushClientClick();
+                this.runClientClick();
             });
         }
+        if (clientOptions.button.prev !== null) {
+            clientOptions.button.prev.addEventListener('click', (evt) => {
+                this.runClientClick(true);
+            });
+        }
+    }
+
+    async runClientClick(reverse = false) {
+        this.delayedAutoplay();
+
+        const {client: options} = this.options
+        const {click} = this.client;
+
+        if (reverse !== click.reverse && click.bug.length !== 0) {
+            click.prevent = true;
+        }
+
+        let duration = click.duration;
+        let delay = options.delay;
+
+        click.reverse = reverse;
+
+        if (options.flexibleClick === true) {
+            let nowTime = performance.now();
+
+            if (click.prevTime === null || ((nowTime - click.prevTime) > options.duration)) {
+                click.prevTime = (performance.now() - options.duration);
+            }
+
+            duration = (nowTime - click.prevTime);
+
+            click.prevTime = nowTime;
+            if (duration < options.minDuration) {
+                duration = options.minDuration;
+            }
+
+            delay = (duration * this.client.click.delayPercent);
+        }
+
+        this.client.click.bug.push([duration, delay]);
+
+        this.flushClientClick();
     }
 
     async runAutoplay() {
@@ -215,10 +230,6 @@ export default class SideSlider {
 
         this.autoplay.nextDuration = (options.duration - options.delay);
         this.autoplay.runnerDuration = options.duration;
-
-        if (options.reverse === true) {
-            this.autoplay.runnerDuration -= options.delay;
-        }
 
         this.autoplay.runnerAnimations = [];
         this.autoplay.nextAnimations = [];
@@ -344,7 +355,7 @@ export default class SideSlider {
 
     slideItem() {
         this.direction.insert(this.current);
-        this.options.runner.mutation.hide(this.current);
+        this.options.runner.mutation.done(this.current);
 
         for (const item of this.direction.getItems()) {
             item.removeAttribute('style');
@@ -388,7 +399,7 @@ export default class SideSlider {
             nextDuration = (nextDuration / next.visible);
         }
 
-        this.parseAnimation(runner, this.client.runnerAnimations, runnerDuration);
+        this.parseAnimation(runner, this.client.runnerAnimations, runnerDuration, click.reverse);
         this.parseAnimation(next, this.client.nextAnimations, nextDuration);
 
         this.nextSlide({
@@ -398,6 +409,7 @@ export default class SideSlider {
             nextDuration: nextDuration,
             delay: delay,
             chain: options.chain,
+            isReverse: click.reverse,
         });
     }
 
@@ -511,7 +523,7 @@ export default class SideSlider {
             item.classList.add('is-runner');
         }
 
-        runner.mutation.hide ??= function (item) {
+        runner.mutation.done ??= function (item) {
             item.classList.remove('is-runner');
         }
 
@@ -523,7 +535,7 @@ export default class SideSlider {
             item.classList.add('is-visible');
         }
 
-        if (!(runner.mutation.active instanceof Function) || !(runner.mutation.hide instanceof Function)) {
+        if (!(runner.mutation.active instanceof Function) || !(runner.mutation.done instanceof Function)) {
             throw new Error('Примісі повині бути функціями.');
         }
 
