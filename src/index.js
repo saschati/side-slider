@@ -36,8 +36,9 @@ export default class SideSlider {
     options = {
         autoplay: {
             reverse: false,
-            duration: 5000,
+            duration: 3000,
             delay: 0,
+            calculateDelayFromOther: false,
             active: true,
             chain: true,
             delayedStart: {
@@ -46,7 +47,7 @@ export default class SideSlider {
             },
         },
         runner: {
-            wait: 50,
+            wait: 100,
             animates: runnerHide,
         },
         next: {
@@ -57,8 +58,10 @@ export default class SideSlider {
             duration: 750,
             minDuration: 250,
             delay: 0,
+            calculateDelayFromOther: false,
             chain: true,
             flexibleClick: true,
+            prevent: false,
             button: {
                 prev: null,
                 next: null,
@@ -71,6 +74,10 @@ export default class SideSlider {
             onUnActive: null,
             onVisible: null,
             onUnVisible: null,
+            onSwitched: null,
+
+            onClickStart: null,
+            onClickFlushed: null,
         },
         timing: linage,
         reverse: reverse,
@@ -88,6 +95,8 @@ export default class SideSlider {
         delayedStart: {
             id: null,
         },
+
+        delayPercent: 0,
 
         nextDuration: 0,
         runnerDuration: 0,
@@ -159,12 +168,20 @@ export default class SideSlider {
             }
         }
 
+        if (autoplayOptions.active === false && (clientOptions.button.prev === null && clientOptions.button.next)) {
+            throw new Error('Стрічка не працююча, автопрограх виключений і не передано жодного обробника руху.');
+        }
+
         if (clientOptions.delay > 0 && clientOptions.flexibleClick === true) {
             this.client.click.delayPercent = (1 - ((clientOptions.duration - clientOptions.delay) / clientOptions.duration));
         }
 
-        if (autoplayOptions.active === false && (clientOptions.button.prev === null && clientOptions.button.next)) {
-            throw new Error('Стрічка не працююча, автопрограх виключений і не передано жодного обробника руху.');
+        if (clientOptions.calculateDelayFromOther === true) {
+            this.client.click.delayPercent = this.calculateDelayFromOther(clientOptions, autoplayOptions);
+        }
+
+        if (autoplayOptions.calculateDelayFromOther === true) {
+            this.autoplay.delayPercent = this.calculateDelayFromOther(autoplayOptions, clientOptions);
         }
 
         if (autoplayOptions.active === true) {
@@ -172,29 +189,35 @@ export default class SideSlider {
         }
 
         if (clientOptions.button.next !== null) {
-            clientOptions.button.next.addEventListener('click', (evt) => {
+            clientOptions.button.next.addEventListener('click', () => {
                 this.runClientClick();
             });
         }
         if (clientOptions.button.prev !== null) {
-            clientOptions.button.prev.addEventListener('click', (evt) => {
+            clientOptions.button.prev.addEventListener('click', () => {
                 this.runClientClick(true);
             });
         }
     }
 
     async runClientClick(reverse = false) {
-        this.delayedAutoplay();
-
         const {client: options} = this.options
         const {click} = this.client;
+
+        if (click.bug.length !== 0 && options.prevent === true) {
+            return;
+        }
 
         if (reverse !== click.reverse && click.bug.length !== 0) {
             click.prevent = true;
         }
 
-        let duration = click.duration;
+        let duration = options.duration;
         let delay = options.delay;
+
+        if (options.calculateDelayFromOther === true) {
+            delay = (duration * this.client.click.delayPercent);
+        }
 
         click.reverse = reverse;
 
@@ -212,7 +235,7 @@ export default class SideSlider {
                 duration = options.minDuration;
             }
 
-            delay = (duration * this.client.click.delayPercent);
+            delay = (duration * click.delayPercent);
         }
 
         this.client.click.bug.push([duration, delay]);
@@ -224,6 +247,10 @@ export default class SideSlider {
         const {runner, next, autoplay: options} = this.options;
 
         options.active = true;
+
+        if (options.calculateDelayFromOther === true) {
+            options.delay = (options.duration * this.autoplay.delayPercent);
+        }
 
         this.autoplay.nextDuration = (options.duration - options.delay);
         this.autoplay.runnerDuration = options.duration;
@@ -281,6 +308,12 @@ export default class SideSlider {
             this.current = null;
         }
 
+        if (this.client.isFlushed === true) {
+            const button = this.options.client.button;
+
+            this.options.mutation.onClickStart((this.client.click.reverse === true) ? button.prev : button.next);
+        }
+
         this.direction.setReverse(this.isReverse);
 
         this.current ??= this.direction.getFirstCurrent();
@@ -290,8 +323,8 @@ export default class SideSlider {
             this.options.mutation.onUnActive(this.current);
         }
 
-        let timeout = 0;
         let count = 0;
+        let timeout = 0;
         if (this.isReverse === false) {
             timeout += delay;
         }
@@ -361,7 +394,7 @@ export default class SideSlider {
 
         setTimeout(
             () => this.slideItem(),
-            (runnerDuration + (this.options.runner.wait * 2))
+            (runnerDuration + this.options.runner.wait)
         );
     }
 
@@ -377,16 +410,22 @@ export default class SideSlider {
         }
 
         this.direction.getItems().forEach(item => {
-            item.removeAttribute('style');
+            this.options.mutation.onSwitched(item);
         });
+
+        if (this.client.isFlushed === true) {
+            const button = this.options.client.button;
+
+            this.options.mutation.onClickFlushed((this.client.click.reverse === true) ? button.prev : button.next);
+        }
 
         this.client.isFlushed = false;
         this.autoplay.isFlushed = false;
 
         this.current = this.next;
 
-        this.flushAutoplay();
         this.flushClientClick();
+        this.flushAutoplay();
     }
 
     async flushClientClick() {
@@ -396,6 +435,8 @@ export default class SideSlider {
         if (click.bug.length === 0 || this.client.isFlushed === true || this.autoplay.isFlushed === true) {
             return;
         }
+
+        this.delayedAutoplay();
 
         if (click.prevent === true) {
             click.bug = [];
@@ -532,6 +573,18 @@ export default class SideSlider {
         });
     }
 
+    calculateDelayFromOther(options, otherOptions) {
+        if (otherOptions.calculateDelayFromOther === true) {
+            throw new Error('Автоматично визначети затримку для кліку неможливо, оскільки дані автоматичного відтворення залежать від кліку.');
+        }
+
+        if (!otherOptions.delay || !otherOptions.duration) {
+            throw new Error('Автоматично визначети затримку для кліку неможливо через брак даних.');
+        }
+
+        return (1 - ((otherOptions.duration - otherOptions.delay) / otherOptions.duration));
+    }
+
     attachMutation() {
         const {mutation} = this.options;
 
@@ -557,6 +610,18 @@ export default class SideSlider {
 
         mutation.onUnVisible ??= function (item) {
             item.classList.remove('is-visible');
+        }
+
+        mutation.onSwitched ??= function (item) {
+            item.removeAttribute('style');
+        }
+
+        mutation.onClickStart ??= function (item) {
+            item.classList.add('is-click');
+        }
+
+        mutation.onClickFlushed ??= function (item) {
+            item.classList.remove('is-click');
         }
 
         if (!Object.getOwnPropertyNames(mutation).every(item => mutation[item] instanceof Function)) {
