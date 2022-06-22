@@ -48,18 +48,10 @@ export default class SideSlider {
         runner: {
             wait: 50,
             animates: runnerHide,
-            mutation: {
-                active: null,
-                done: null,
-            }
         },
         next: {
             visible: null,
             animates: nextRun,
-            mutation: {
-                active: null,
-                visible: null,
-            }
         },
         client: {
             duration: 750,
@@ -71,6 +63,14 @@ export default class SideSlider {
                 prev: null,
                 next: null,
             },
+        },
+        mutation: {
+            onRun: null,
+            onDone: null,
+            onActive: null,
+            onUnActive: null,
+            onVisible: null,
+            onUnVisible: null,
         },
         timing: linage,
         reverse: reverse,
@@ -149,12 +149,9 @@ export default class SideSlider {
 
         if (autoplayOptions.chain === true || clientOptions.chain === true) {
             if (isEmpty(next.visible) === true) {
-                let visible = 0;
-                for (const item of this.direction.getItems()) {
-                    visible += this.isVisible(item) ? 1 : 0 ;
-                }
-
-                next.visible = visible;
+                next.visible = this.direction.getItems().reduce((accumulator, item) => {
+                    return accumulator + (this.isVisible(item) ? 1 : 0);
+                }, 0);
             }
 
             if (isInteger(next.visible) === false) {
@@ -289,49 +286,60 @@ export default class SideSlider {
         this.current ??= this.direction.getFirstCurrent();
         this.next = this.direction.getNextSibling(this.current);
 
-        this.options.runner.mutation.active(this.current);
-        this.options.next.mutation.active(this.next);
+        if (this.isReverse === false) {
+            this.options.mutation.onUnActive(this.current);
+        }
 
         let timeout = 0;
         let count = 0;
         if (this.isReverse === false) {
             timeout += delay;
         }
-        for (const item of this.direction.getItems()) {
+        this.direction.getItems().forEach(item => {
             const next = this.direction.getNextSibling(item);
             if (next === null) {
-                continue;
+                if (this.isReverse === true) {
+                    this.options.mutation.onUnActive(item);
+                }
+
+                return;
             }
 
-            if (this.isVisible(item) === false && (this.isReverse === true && this.isVisible(next) === false)) {
-                continue;
+            if ((this.isReverse === true && this.isVisible(next) === false) || this.isVisible(item) === false) {
+                this.options.mutation.onUnVisible(next);
+
+                return;
             }
 
-            this.options.next.mutation.visible(next);
+            this.options.mutation.onVisible(next);
 
             const info = this.direction.getNextInfo({prev: item, current: next});
             const [animation] = nextAnimations;
 
             const _animation = cloneDeep(animation);
 
-            if (chain === false) {
-                setTimeout(() => {
-                    _animation.begin(info);
-                }, timeout);
+            const nextAnimation = () => {
+                if (this.isReverse === false && this.next === next) {
+                    this.options.mutation.onActive(this.next)
+                }
 
-                continue;
+                _animation.begin(info);
             }
 
-            setTimeout(() => {
-                _animation.begin(info);
-            }, timeout);
+            if (chain === false) {
+                setTimeout(nextAnimation, timeout);
+
+                return;
+            }
+
+            setTimeout(nextAnimation, timeout);
 
             timeout = (++count * nextDuration);
 
             if (this.isReverse === false) {
                 timeout += delay;
             }
-        }
+        });
 
         const [animation] = runnerAnimations;
         const _animation = cloneDeep(animation);
@@ -341,7 +349,11 @@ export default class SideSlider {
             windowWidth: this.windowWidth
         });
 
-        setTimeout(() => _animation.begin(info), (this.isReverse === true ? delay : 0));
+        setTimeout(() => {
+            this.options.mutation.onRun(this.current);
+
+            _animation.begin(info)
+        }, (this.isReverse === true ? delay : 0));
 
         if (this.isReverse === true) {
             runnerDuration += delay;
@@ -355,11 +367,18 @@ export default class SideSlider {
 
     slideItem() {
         this.direction.insert(this.current);
-        this.options.runner.mutation.done(this.current);
 
-        for (const item of this.direction.getItems()) {
-            item.removeAttribute('style');
+        this.options.mutation.onDone(this.current);
+        if (this.isReverse === true) {
+            this.options.mutation.onActive(this.current);
+            this.options.mutation.onVisible(this.current);
+        } else {
+            this.options.mutation.onUnVisible(this.current);
         }
+
+        this.direction.getItems().forEach(item => {
+            item.removeAttribute('style');
+        });
 
         this.client.isFlushed = false;
         this.autoplay.isFlushed = false;
@@ -514,32 +533,33 @@ export default class SideSlider {
     }
 
     attachMutation() {
-        const {runner, next} = this.options;
+        const {mutation} = this.options;
 
-        runner.mutation.active ??= function (item) {
-            item.classList.remove('is-active');
-            item.classList.remove('is-visible');
-
+        mutation.onRun ??= function (item) {
             item.classList.add('is-runner');
         }
 
-        runner.mutation.done ??= function (item) {
+        mutation.onDone ??= function (item) {
             item.classList.remove('is-runner');
         }
 
-        next.mutation.active ??= function (item) {
+        mutation.onActive ??= function (item) {
             item.classList.add('is-active');
         }
 
-        next.mutation.visible ??= function (item) {
+        mutation.onUnActive ??= function (item) {
+            item.classList.remove('is-active');
+        }
+
+        mutation.onVisible ??= function (item) {
             item.classList.add('is-visible');
         }
 
-        if (!(runner.mutation.active instanceof Function) || !(runner.mutation.done instanceof Function)) {
-            throw new Error('Примісі повині бути функціями.');
+        mutation.onUnVisible ??= function (item) {
+            item.classList.remove('is-visible');
         }
 
-        if (!(next.mutation.active instanceof Function) || !(next.mutation.visible instanceof Function)) {
+        if (!Object.getOwnPropertyNames(mutation).every(item => mutation[item] instanceof Function)) {
             throw new Error('Примісі повині бути функціями.');
         }
     }
