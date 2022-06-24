@@ -11,6 +11,8 @@ import reverse from "./animate/timing/reverse";
 import runnerHide from "./animate/animation/runner/hide";
 import nextRun from "./animate/animation/next/run";
 
+import Effect from "./chunk/effect";
+
 import Right from "./chunk/side/right";
 
 export default class SideSlider {
@@ -61,7 +63,11 @@ export default class SideSlider {
             calculateDelayFromOther: false,
             chain: true,
             flexibleClick: true,
-            prevent: false,
+            prevent: true,
+            speedUp: {
+                active: true,
+                forceNext: true,
+            },
             button: {
                 prev: null,
                 next: null,
@@ -91,6 +97,7 @@ export default class SideSlider {
 
     autoplay = {
         isFlushed: false,
+        reverse: false,
 
         delayedStart: {
             id: null,
@@ -122,6 +129,15 @@ export default class SideSlider {
         nextAnimations: [],
     };
 
+    animations = new Map();
+
+    nextSlideItem = {
+        id: null,
+        duration: 0,
+        isForced: false,
+        startTime: 0,
+    }
+
     /**
      * @param {HTMLElement} wrapper
      * @param {Right} direction
@@ -149,7 +165,7 @@ export default class SideSlider {
         merge(this.options, options || {});
     }
 
-    async run() {
+    async boot() {
         this.windowWidth = (global.pageXOffset + document.documentElement.clientWidth);
 
         const {next, autoplay: autoplayOptions, client: clientOptions} = this.options;
@@ -168,7 +184,7 @@ export default class SideSlider {
             }
         }
 
-        if (autoplayOptions.active === false && (clientOptions.button.prev === null && clientOptions.button.next)) {
+        if (autoplayOptions.active === false && (clientOptions.button.prev === null && clientOptions.button.next === null)) {
             throw new Error('Стрічка не працююча, автопрограх виключений і не передано жодного обробника руху.');
         }
 
@@ -185,22 +201,22 @@ export default class SideSlider {
         }
 
         if (autoplayOptions.active === true) {
-            this.runAutoplay();
+            this.triggerAutoplay(autoplayOptions.reverse);
         }
 
         if (clientOptions.button.next !== null) {
             clientOptions.button.next.addEventListener('click', () => {
-                this.runClientClick();
+                this.triggerClientClick();
             });
         }
         if (clientOptions.button.prev !== null) {
             clientOptions.button.prev.addEventListener('click', () => {
-                this.runClientClick(true);
+                this.triggerClientClick(true);
             });
         }
     }
 
-    async runClientClick(reverse = false) {
+    async triggerClientClick(reverse = false) {
         const {client: options} = this.options
         const {click} = this.client;
 
@@ -243,10 +259,11 @@ export default class SideSlider {
         this.flushClientClick();
     }
 
-    async runAutoplay() {
+    async triggerAutoplay(reverse = false) {
         const {runner, next, autoplay: options} = this.options;
 
         options.active = true;
+        options.reverse = reverse;
 
         if (options.calculateDelayFromOther === true) {
             options.delay = (options.duration * this.autoplay.delayPercent);
@@ -338,7 +355,7 @@ export default class SideSlider {
                 return;
             }
 
-            if ((this.isReverse === true && this.isVisible(next) === false) || this.isVisible(item) === false) {
+            if (this.isVisible((this.isReverse === true ? next : item)) === false) {
                 this.options.mutation.onUnVisible(next);
 
                 return;
@@ -359,13 +376,20 @@ export default class SideSlider {
                 _animation.begin(info);
             }
 
+            const animate = () => {
+                this.animations.set(
+                    next,
+                    new Effect(_animation, timeout, setTimeout(nextAnimation, timeout), nextAnimation)
+                );
+            }
+
             if (chain === false) {
-                setTimeout(nextAnimation, timeout);
+                animate();
 
                 return;
             }
 
-            setTimeout(nextAnimation, timeout);
+            animate();
 
             timeout = (++count * nextDuration);
 
@@ -382,19 +406,26 @@ export default class SideSlider {
             windowWidth: this.windowWidth
         });
 
-        setTimeout(() => {
+        timeout = (this.isReverse === true ? delay : 0);
+        const currentAnimation = () => {
             this.options.mutation.onRun(this.current);
 
             _animation.begin(info)
-        }, (this.isReverse === true ? delay : 0));
+        }
+
+        this.animations.set(
+            this.current,
+            new Effect(_animation, timeout, setTimeout(currentAnimation, timeout), currentAnimation)
+        );
 
         if (this.isReverse === true) {
             runnerDuration += delay;
         }
 
-        setTimeout(
+        this.nextSlideItem.startTime = performance.now();
+        this.nextSlideItem.id = setTimeout(
             () => this.slideItem(),
-            (runnerDuration + this.options.runner.wait)
+            this.nextSlideItem.duration = (runnerDuration + this.options.runner.wait)
         );
     }
 
@@ -422,6 +453,9 @@ export default class SideSlider {
         this.client.isFlushed = false;
         this.autoplay.isFlushed = false;
 
+        this.animations = new Map();
+        this.nextSlideItem.isForced = false;
+
         this.current = this.next;
 
         this.flushClientClick();
@@ -433,6 +467,59 @@ export default class SideSlider {
         const {next, runner, client: options} = this.options;
 
         if (click.bug.length === 0 || this.client.isFlushed === true || this.autoplay.isFlushed === true) {
+            if (options.speedUp.active === true && this.autoplay.isFlushed === true && this.nextSlideItem.isForced === false) {
+                this.nextSlideItem.isForced = true;
+
+                const accelerate = (this.options.autoplay.duration / options.duration);
+
+                const speedUpRecursive = next => {
+                    if (next === null) {
+                        return;
+                    }
+
+                    next.speedUp(accelerate);
+
+                    return speedUpRecursive(next.getNext());
+                }
+
+                const speedUp = async effect => {
+                    const animation = effect.getAnimation();
+
+                    if (animation.isFinish() === true) {
+                        return speedUpRecursive(animation.getNext());
+                    }
+
+                    animation.speedUp(accelerate);
+                    if (animation.isStart() === true) {
+                        return speedUpRecursive(animation.getNext());
+                    }
+
+                    if (effect.hasTimeout() ===true) {
+                        clearTimeout(effect.getTimeoutId());
+                        setTimeout(effect.getFunc(), effect.getTimeout(accelerate));
+                    }
+
+                    return speedUpRecursive(animation.getNext());
+                }
+
+                Array.from(this.animations.values()).forEach(speedUp);
+
+                clearTimeout(this.nextSlideItem.id);
+
+                const passed = (performance.now() - this.nextSlideItem.startTime);
+
+                this.nextSlideItem.id = setTimeout(
+                    () => this.slideItem(),
+                    (((this.nextSlideItem.duration - passed) / accelerate) + 100)
+                );
+
+                if (options.speedUp.forceNext === false) {
+                    this.delayedAutoplay();
+
+                    click.bug = [];
+                }
+            }
+
             return;
         }
 

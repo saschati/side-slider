@@ -12,6 +12,9 @@ export default class Animate {
         this.next = next;
 
         this.prevTF = 0;
+        this.isFinished = false;
+        this.isStarted = false;
+        this.accelerate = 0;
     }
 
     /**
@@ -56,6 +59,31 @@ export default class Animate {
         requestAnimationFrame(this.animation.bind(this, info));
     }
 
+    speedUp(percent) {
+        this.accelerate = percent;
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isFinish() {
+        return this.isFinished === true;
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isStart() {
+        return this.isStarted === true;
+    }
+
+    /**
+     * @return {Animate|null}
+     */
+    getNext() {
+        return this.next;
+    }
+
     /**
      * Private element animation calculation function
      *
@@ -65,6 +93,8 @@ export default class Animate {
      * @return {void}
      */
     animation(info, time) {
+        this.isStarted = true;
+
         if (this.stop === true) {
             return;
         }
@@ -72,18 +102,27 @@ export default class Animate {
         this.time = time;
         this.timeFraction = (this.prevTF + ((this.time - this.start) / this.duration));
 
+        if (this.accelerate > 0) {
+            this.timeFraction += (this.timeFraction * this.accelerate)
+        }
+
         if (this.timeFraction > 1) {
             this.timeFraction = 1;
         }
 
-        let progress =  this.timing(this.timeFraction);
+        let progress = this.timing(this.timeFraction);
 
         this.draw(info, progress);
 
         if (this.timeFraction < 1) {
             requestAnimationFrame(this.animation.bind(this, info));
         } else {
-            this.next?.begin(info);
+            this.isFinished = true;
+
+            if (this.next !== null) {
+                this.next.speedUp(this.accelerate);
+                this.next.begin(info)
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 import round from 'lodash/round';
 
 export default function (right = true) {
-    let move = right ? '' : '-';
+    const move = right ? '' : '-';
 
     /**
      * @param {Info} info
@@ -33,12 +33,13 @@ export default function (right = true) {
             x += info.getHorizonHideDistance();
         }
 
+        let _move = move;
         if (x < 0 && right === false) {
-            move = '';
+            _move = '';
             x = Math.abs(x);
         }
 
-        info.getCurrent().style.transform = `translate(${move}${x}px, ${height}px) rotate(90deg)`;
+        info.getCurrent().style.transform = `translate(${_move}${x}px, ${height}px) rotate(90deg)`;
     }
 
     return [
