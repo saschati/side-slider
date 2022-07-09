@@ -15,6 +15,8 @@ export default class Info {
     }
 
     /**
+     * Get the full distance from the first element to the last
+     *
      * @return {number}
      */
     getDistance() {
@@ -22,6 +24,8 @@ export default class Info {
     }
 
     /**
+     * Get the distance from the first element to the beginning of the horizon
+     *
      * @return {number}
      */
     getHorizon() {
@@ -29,6 +33,8 @@ export default class Info {
     }
 
     /**
+     * Get the distance between the horizon and the hidden part to the main element
+     *
      * @return {number}
      */
     getHorizonHideDistance() {
@@ -36,6 +42,8 @@ export default class Info {
     }
 
     /**
+     * Get the final position to manifest in place of the main element
+     *
      * @return {number}
      */
     getReverseFinishedPosition() {
@@ -43,6 +51,8 @@ export default class Info {
     }
 
     /**
+     * Get the current parent element
+     *
      * @return {HTMLElement}
      */
     getCurrent() {
@@ -50,6 +60,8 @@ export default class Info {
     }
 
     /**
+     * Get the neighboring element that will shift to the main one
+     *
      * @return {HTMLElement}
      */
     getShift() {
@@ -57,6 +69,8 @@ export default class Info {
     }
 
     /**
+     * Is this operation hide/unhidden
+     *
      * @return {boolean}
      */
     isReverse() {

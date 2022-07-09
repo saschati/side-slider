@@ -19,6 +19,7 @@ export default class Animate {
 
     /**
      * Launch the animation at the start of the tape
+     *
      * @return {void}
      */
     async begin(info) {
@@ -59,11 +60,20 @@ export default class Animate {
         requestAnimationFrame(this.animation.bind(this, info));
     }
 
+    /**
+     * Speed up animation by percent times
+     *
+     * @param {number} percent
+     *
+     * @return {void}
+     */
     speedUp(percent) {
         this.accelerate = percent;
     }
 
     /**
+     * Has this animation finished
+     *
      * @return {boolean}
      */
     isFinish() {
@@ -71,6 +81,8 @@ export default class Animate {
     }
 
     /**
+     * Has this animation started
+     *
      * @return {boolean}
      */
     isStart() {
@@ -78,6 +90,8 @@ export default class Animate {
     }
 
     /**
+     * Return the next animation that will be launched after this one
+     *
      * @return {Animate|null}
      */
     getNext() {

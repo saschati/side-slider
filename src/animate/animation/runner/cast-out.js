@@ -1,10 +1,17 @@
 import round from "lodash/round";
 import percent from "../../helpers/percent";
 
+/**
+ * @param {boolean} right The direction in which to throw the element
+ *
+ * @return {(function(*, *=): void)|*}
+ */
 export default function (right = true) {
     let minus = right ? '' : '-';
 
     /**
+     * Element throwing animation
+     *
      * @param {Info} info
      * @param {number} progress
      *

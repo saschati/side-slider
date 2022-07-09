@@ -8,6 +8,8 @@ export default [
     {
         progress: 50,
         /**
+         * Element reduction animation
+         *
          * @param {Info} info
          * @param {number} progress
          *
@@ -21,6 +23,8 @@ export default [
         progress: 100,
         timing: reverse(linage),
         /**
+         * Animation of increasing the element at the end point
+         *
          * @param {Info} info
          * @param {number} progress
          *

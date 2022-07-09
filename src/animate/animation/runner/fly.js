@@ -1,9 +1,16 @@
 import round from 'lodash/round';
 
+/**
+ * @param {boolean} right Flight direction
+ *
+ * @return {[{progress: number, draw: fly}, {progress: number, draw: run}]}
+ */
 export default function (right = true) {
     const move = right ? '' : '-';
 
     /**
+     * Animation of preparation for flight of an element
+     *
      * @param {Info} info
      * @param {number} progress
      *
@@ -19,6 +26,8 @@ export default function (right = true) {
     }
 
     /**
+     * Flight animation
+     *
      * @param {Info} info
      * @param {number} progress
      *

@@ -1,4 +1,6 @@
 /**
+ * Reverses the passed time function
+ *
  * @param {function} timing
  *
  * @return {function(*)}

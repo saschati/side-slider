@@ -1,6 +1,8 @@
 import percent from "../../helpers/percent";
 
 /**
+ * Right shift animation
+ *
  * @param {Info} info
  * @param {number} progress
  *

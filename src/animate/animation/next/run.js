@@ -1,4 +1,6 @@
 /**
+ * Animation of element displacement to the end point
+ *
  * @param {Info} info
  * @param {number} progress
  *

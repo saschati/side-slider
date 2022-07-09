@@ -2,6 +2,8 @@ import round from "lodash/round";
 import percent from "../../helpers/percent";
 
 /**
+ * Tornado effect animation for element
+ *
  * @param {Info} info
  * @param {number} progress
  *

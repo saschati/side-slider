@@ -1,7 +1,7 @@
 {
   "name": "@saschati/side-slider",
   "version": "1.0.0",
-  "description": "Slider to scroll elements from the side",
+  "description": "A library for animation of side sliders that is calculated and optimized for this niche.",
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

@@ -1,6 +1,8 @@
 import percent from "../../helpers/percent";
 
 /**
+ * Animation of hiding an element
+ *
  * @param {Info} info
  * @param {number} progress
  *

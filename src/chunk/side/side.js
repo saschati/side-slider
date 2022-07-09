@@ -10,6 +10,8 @@ export default class Side {
     }
 
     /**
+     * Set direction to hide or show
+     *
      * @param {boolean} reverse
      *
      * @return {void}
@@ -19,6 +21,8 @@ export default class Side {
     }
 
     /**
+     * Get information on the main element
+     *
      * @param {HTMLElement} current
      * @param {HTMLElement} shift
      * @param {number} windowWidth
@@ -30,6 +34,8 @@ export default class Side {
     }
 
     /**
+     * Get information about neighboring elements from the parent
+     *
      * @param {HTMLElement} prev
      * @param {HTMLElement} current
      *
@@ -40,6 +46,8 @@ export default class Side {
     }
 
     /**
+     * Get the item to be moved
+     *
      * @return {HTMLElement}
      */
     getShift() {
@@ -47,6 +55,8 @@ export default class Side {
     }
 
     /**
+     * The element from which to start the slider
+     *
      * @return {HTMLElement}
      */
     getFirstCurrent() {
@@ -54,6 +64,8 @@ export default class Side {
     }
 
     /**
+     * Get the next element in the list that will be the main one after switching the slide
+     *
      * @param {HTMLElement} item
      *
      * @return {HTMLElement}
@@ -63,6 +75,8 @@ export default class Side {
     }
 
     /**
+     * Add a slide to the end/beginning of the collection
+     *
      * @param {HTMLElement} item
      *
      * @return {void}
@@ -72,6 +86,8 @@ export default class Side {
     }
 
     /**
+     * Get a list of items sorted by playback order
+     *
      * @return {HTMLElement[]}
      */
     getItems() {

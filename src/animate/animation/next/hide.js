@@ -1,4 +1,3 @@
-import round from 'lodash/round';
 import percent from "../../helpers/percent";
 
 import run from "./run";
@@ -7,6 +6,8 @@ import linage from "../../timing/linage";
 import reverse from "../../timing/reverse";
 
 /**
+ * Animation of hiding an element
+ *
  * @param {Info} info
  * @param {number} progress
  *

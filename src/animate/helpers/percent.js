@@ -1,8 +1,10 @@
 import round from "lodash/round";
 
 /**
- * @param {number} progress
- * @param {number} n
+ * Calculates the percentage from 0.00 to 1
+ *
+ * @param {number} progress The number is not a stable format
+ * @param {number} n Power
  *
  * @return {number}
  */

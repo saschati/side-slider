@@ -11,6 +11,8 @@ export default class Info {
     }
 
     /**
+     * Get the distance between the current element and the element that will be replaced by the current element
+     *
      * @return {number}
      */
     getSiblingDistance() {
@@ -18,6 +20,8 @@ export default class Info {
     }
 
     /**
+     * Get the current neighbor element
+     *
      * @return {HTMLElement}
      */
     getCurrent() {
@@ -25,6 +29,8 @@ export default class Info {
     }
 
     /**
+     * Is this operation hide/unhidden
+     *
      * @return {boolean}
      */
     isReverse() {
