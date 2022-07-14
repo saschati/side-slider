@@ -1039,13 +1039,22 @@ export default class SideSlider {
             return;
         }
 
+        let hasHundred = false;
         const progress = subject.animates.map(item => {
-            if (item.progress > 100) {
-                throw new Error('Progress cannot be more than 100%.');
+            if (item.progress > 100 || item.progress < 0) {
+                throw new Error('Progress cannot exceed 100% and be below 0%.');
+            }
+
+            if (item.progress === 100) {
+                hasHundred = true;
             }
 
             return item.progress;
         });
+
+        if (hasHundred === false) {
+            throw new Error('The animation is not performed 100 percent.');
+        }
 
         if (uniq(progress).length < progress.length) {
             throw new Error('Progress must be unique for each animation.');

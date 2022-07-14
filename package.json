@@ -1,6 +1,6 @@
 {
   "name": "@saschati/side-slider",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A library for animation of side sliders that is calculated and optimized for this niche.",
   "main": "src/index.js",
   "scripts": {
@@ -21,7 +21,7 @@
   "bugs": {
     "url": "https://github.com/saschati/side-slider/issues"
   },
-  "homepage": "https://github.com/saschati/side-slider#readme",
+  "homepage": "https://saschati.github.io/side-slider-docs/",
   "dependencies": {
     "lodash": "^4.17.21"
   }

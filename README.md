@@ -8,6 +8,7 @@
 [download-url]: https://www.npmjs.com/package/@saschati/side-slider
 
 A library for animation of side sliders that is calculated and optimized for this niche.
+You can read more about the [documentation and demo](https://saschati.github.io/side-slider-docs/).
 
 ## Before use:
  - This plugin does not style the tape container and its internal blocks, but only animate them move.
@@ -25,7 +26,7 @@ import SideSlider from "@saschati/side-slider";
 
 // This event is required for the plugin to work correctly
 window.addEventListener('load', function () {
-   // By default, the placement ribbon is on the right
+   // By default, the slider is placed on the right
    const slider = new SideSlider({
         wrapper: document.querySelector('.side-slider'),
     });
@@ -39,7 +40,6 @@ window.addEventListener('load', function () {
 import SideSlider from "@saschati/side-slider";
 // Animate class
 import Animate from "@saschati/src/animate/animate";
-import reverse from "@saschati/src/animate/timing/reverse";
 // Animations runner
 import runnerCaseOut from "@saschati/side-slider/src/animate/animation/runner/cast-out";
 import runnerDown from "@saschati/side-slider/src/animate/animation/runner/down";
@@ -57,6 +57,7 @@ import nextScale from "@saschati/side-slider/src/animate/animation/next/scale";
 import nextTwist from "@saschati/side-slider/src/animate/animation/next/twist";
 // Timing function
 import linage from "@saschati/side-slider/src/animate/timing/linage";
+import reverse from "@saschati/side-slider/src/animate/timing/reverse";
 // Direction slider
 import Left from "@saschati/side-slider/src/chunk/side/left";
 
@@ -67,7 +68,7 @@ window.addEventListener('load', function () {
     const next = document.querySelector('.side_next');
 
     const slider = new SideSlider({
-        wrapper: tape,
+        wrapper: elem,
         // direction: Left,
         options: {
             // Autoplay field
@@ -97,16 +98,16 @@ window.addEventListener('load', function () {
                 // A delay for the entire loop so that the animation ends before the parent element changes loop
                 wait: 100,
                 // Animation of hiding an element
-                animates: runnerHide,
+                animates: runnerHide, // runnerDown | runnerCaseOut(true|false) | runnerFly(true|false) | runnerHide | runnerLeft | runnerRight | runnerScale | runnerTornado | runnerUp
             },
             // Options of adjacent elements that make the ribbon move
             next: {
                 // The number of visible elements of the tape to divide the time between them if the option chain=true, calculated automatically by default
                 visible: null,
-                // Optimize the switching process by performing it only when the user sees it
+                // Optimize the switching process by performing it only when the user sees it, only for next items
                 optimize: true,
                 // Animation of displacement of adjacent elements for the movement of the tape
-                animates: nextRun,
+                animates: nextRun, // nextHide | nextRun | nextScale | nextTwist
             },
             // Client click options
             client: {
@@ -167,10 +168,12 @@ window.addEventListener('load', function () {
             reverse: reverse,
             // A class for working with animations
             animate: Animate,
+            // Optimize the switching process by performing it only when the user sees it
+            optimize: true,
         }
     });
     
-    // Downloading the configuration and preparing the plug-in to work
+    // Downloading the configuration and preparing the plugin to work
     slider.boot();
     // Change the slide change according to the client click settings
     slider.triggerClientClick(true);
@@ -183,7 +186,11 @@ window.addEventListener('load', function () {
 });
 ```
 
+##Also
+- [demo](https://saschati.github.io/side-slider-docs/#advanced-runner)
+- [docs](https://saschati.github.io/side-slider-docs/#docs)
+- [api](https://saschati.github.io/side-slider-docs/#api)
+
 ## worth to know:
 Before using the plugin, you should know some of its behavior/bugs that may be the reason for not using this library at this time.
 Problems will be solved as a way is found, and the author has free time.
-If there is a problem in this section, then it has not been solved yet :)
