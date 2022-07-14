@@ -4,6 +4,8 @@ import merge from "lodash/merge";
 import cloneDeep from "lodash/cloneDeep";
 import isInteger from "lodash/isInteger";
 
+import isVisible from "./utils/is-visible";
+
 import Animate from "./animate/animate";
 import linage from "./animate/timing/linage";
 import reverse from "./animate/timing/reverse";
@@ -98,7 +100,7 @@ export default class SideSlider {
             /**
              * Delay for neighboring elements before taking the place of the change element
              */
-            delay: 0,
+            delay: 1500,
             /**
              * Determines whether to count the delay from the user's click option
              */
@@ -145,9 +147,9 @@ export default class SideSlider {
              */
             visible: null,
             /**
-             * Optimize the switching process by performing it only when the user sees it
+             * Optimize the switching process by performing it only when the user sees it, only for next items
              */
-            optimize: true,
+            optimize: false,
             /**
              * Animation of displacement of adjacent elements for the movement of the tape
              */
@@ -168,7 +170,7 @@ export default class SideSlider {
             /**
              * Delay for neighboring elements before taking the place of the change element
              */
-            delay: 0,
+            delay: 325,
             /**
              * Determines whether to calculate delay from the autoplay option
              */
@@ -273,6 +275,10 @@ export default class SideSlider {
          * A class for working with animations
          */
         animate: Animate,
+        /**
+         * Optimize the switching process by performing it only when the user sees it
+         */
+        optimize: true,
     }
 
     /**
@@ -388,7 +394,7 @@ export default class SideSlider {
          */
         isFlushed: false,
         /**
-         * Обєкт даних про клік
+         * A click data object
          */
         click: {
             /**
@@ -476,14 +482,14 @@ export default class SideSlider {
     }
 
     /**
-     * Downloading the configuration and preparing the plug-in to work
+     * Downloading the configuration and preparing the plugin to work
      *
      * @return {Promise<void>}
      */
     async boot() {
         this.windowWidth = (global.pageXOffset + document.documentElement.clientWidth);
 
-        const {next, autoplay: autoplayOptions, client: clientOptions} = this.options;
+        const {next, autoplay: autoplayOptions, client: clientOptions, optimize} = this.options;
 
         this.attachMutation();
 
@@ -516,7 +522,21 @@ export default class SideSlider {
         }
 
         if (autoplayOptions.active === true) {
-            this.triggerAutoplay(autoplayOptions.reverse);
+            if (optimize === true && isVisible(this.direction.getWrapper()) === false) {
+                const optimizeAutoplay = () => {
+                    if (isVisible(this.direction.getWrapper()) === false) {
+                        setTimeout(optimizeAutoplay, autoplayOptions.duration)
+
+                        return;
+                    }
+
+                    this.triggerAutoplay(autoplayOptions.reverse);
+                }
+
+                setTimeout(optimizeAutoplay, autoplayOptions.duration);
+            } else {
+                this.triggerAutoplay(autoplayOptions.reverse);
+            }
         }
 
         if (clientOptions.button.next !== null) {
@@ -694,13 +714,24 @@ export default class SideSlider {
             this.options.mutation.onUnActive(this.current);
         }
 
+        const items = this.direction.getItems();
+
         let count = 0;
         let timeout = 0;
-        let total = this.options.next.visible;
+        let actives = this.options.next.visible;
+        let total = items.length;
+        let unVisibleItems;
+
         if (this.isReverse === false) {
             timeout += delay;
+            unVisibleItems = items.splice(actives, (total - actives));
+        } else {
+            unVisibleItems = items.splice(0, (total - actives - 1));
         }
-        this.direction.getItems().forEach(item => {
+
+        unVisibleItems.forEach(this.options.mutation.onUnVisible);
+
+        items.forEach(item => {
             const next = this.direction.getNextSibling(item);
             if (next === null) {
                 if (this.isReverse === true) {
@@ -710,7 +741,7 @@ export default class SideSlider {
                 return;
             }
 
-            if (total === 0 || (this.options.next.optimize === true && this.isVisible((this.isReverse === true ? next : item)) === false)) {
+            if ((this.options.next.optimize === true && isVisible((this.isReverse === true ? next : item)) === false)) {
                 this.options.mutation.onUnVisible(next);
 
                 return;
@@ -737,8 +768,6 @@ export default class SideSlider {
                     new Effect(_animation, timeout, setTimeout(nextAnimation, timeout), nextAnimation)
                 );
             }
-
-            total--;
 
             if (chain === false) {
                 animate();
@@ -823,6 +852,21 @@ export default class SideSlider {
         this.current = this.next;
 
         this.flushClientClick();
+        if (this.options.optimize === true && isVisible(this.direction.getWrapper()) === false) {
+            const optimizeAutoplay = () => {
+                if (isVisible(this.direction.getWrapper()) === false) {
+                    setTimeout(optimizeAutoplay, this.options.autoplay.duration)
+
+                    return;
+                }
+
+                this.flushAutoplay();
+            }
+
+            setTimeout(optimizeAutoplay, this.options.autoplay.duration);
+
+            return;
+        }
         this.flushAutoplay();
     }
 
@@ -956,40 +1000,6 @@ export default class SideSlider {
             chain: options.chain,
             isReverse: options.reverse
         });
-    }
-
-    /**
-     * Check whether the user can see this element.
-     * It is used for optimization so as not to start the animation again if the user does not see it
-     *
-     * @param {HTMLElement} item
-     *
-     * @return {boolean}
-     *
-     * @private
-     */
-    isVisible(item) {
-        const coords = item.getBoundingClientRect();
-
-        const position = {
-            item: {
-                top: global.pageYOffset + coords.top,
-                left: global.pageXOffset + coords.left,
-                right: global.pageXOffset + coords.right,
-                bottom: global.pageYOffset + coords.bottom
-            },
-            window: {
-                top: global.pageYOffset,
-                left: global.pageXOffset,
-                right: global.pageXOffset + document.documentElement.clientWidth,
-                bottom: global.pageYOffset + document.documentElement.clientHeight
-            }
-        };
-
-        return position.item.bottom > position.window.top &&
-            position.item.top < position.window.bottom &&
-            position.item.right > position.window.left &&
-            position.item.left < position.window.right;
     }
 
     /**

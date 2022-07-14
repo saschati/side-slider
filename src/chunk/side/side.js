@@ -86,6 +86,15 @@ export default class Side {
     }
 
     /**
+     * Returns the DOM Element of the slider object
+     *
+     * @return {HTMLElement}
+     */
+    getWrapper() {
+        return this.wrapper;
+    }
+
+    /**
      * Get a list of items sorted by playback order
      *
      * @return {HTMLElement[]}
