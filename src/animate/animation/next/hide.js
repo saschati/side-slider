@@ -1,28 +1,13 @@
 import percent from "../../helpers/percent";
-
 import run from "./run";
-
 import linage from "../../timing/linage";
 import reverse from "../../timing/reverse";
-
 /**
  * Animation of hiding an element
- *
- * @param {Info} info
- * @param {number} progress
- *
- * @return {void}
  */
 function hide(info, progress) {
-    info.getCurrent().style.opacity = percent(progress);
+    info.getCurrent().style.opacity = `${percent(progress)}`;
 }
-
-/**
- * @param {Info} info
- * @param {number} progress
- *
- * @return {void}
- */
 export default [
     {
         progress: 40,
@@ -36,5 +21,5 @@ export default [
         progress: 100,
         timing: reverse(linage),
         draw: hide,
-    }
+    },
 ];
