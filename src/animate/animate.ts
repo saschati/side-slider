@@ -28,7 +28,7 @@ export default class Animate {
     duration: number;
     timing: TimingFunction;
     draw: AnimationFunction;
-    next: Animate | null;
+    next?: Animate | null;
   }) {
     this.duration = duration;
     this.timing = timing;

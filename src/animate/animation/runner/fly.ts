@@ -4,7 +4,7 @@ import Info from "../../../chunk/info/runner/info";
 import round from "lodash/round";
 
 /**
- * @param {boolean} right Flight direction.
+ * @param right Flight direction.
  */
 export default function (right: boolean = true): AnimationRunnerArray {
   const move = right ? "" : "-";

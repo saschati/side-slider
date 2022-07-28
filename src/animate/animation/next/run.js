@@ -1,10 +1,5 @@
 /**
- * Animation of element displacement to the end point
- *
- * @param {Info} info
- * @param {number} progress
- *
- * @return {void}
+ * Animation of element displacement to the end point.
  */
 export default function run(info, progress) {
     const distance = info.getSiblingDistance();

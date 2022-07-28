@@ -6,7 +6,7 @@ import percent from "../../helpers/percent";
 import Info from "../../../chunk/info/runner/info";
 
 /**
- * @param {boolean} right The direction in which to throw the element.
+ * @param right The direction in which to throw the element.
  */
 export default function (right: boolean = true): AnimationRunnerFunction {
   let minus = right ? "" : "-";

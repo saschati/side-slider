@@ -8,7 +8,7 @@ import reverse from "../../timing/reverse";
 import Info from "../../../chunk/info/next/info";
 
 /**
- * Animation of hiding an element
+ * Animation of hiding an element.
  */
 function hide(info: Info, progress: number): void {
   info.getCurrent().style.opacity = `${percent(progress)}`;

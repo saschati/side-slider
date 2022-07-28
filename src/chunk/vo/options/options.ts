@@ -8,39 +8,39 @@ import Animate from "../../../animate/animate";
 
 export default interface Options {
   /**
-   * Autoplay field
+   * Autoplay field.
    */
   autoplay: Autoplay;
   /**
-   * Options for the element that should be hidden and placed at the end/beginning according to the direction
+   * Options for the element that should be hidden and placed at the end/beginning according to the direction.
    */
   runner: Runner;
   /**
-   * Options of adjacent elements that make the ribbon move
+   * Options of adjacent elements that make the ribbon move.
    */
   next: Next;
   /**
-   * Client click options
+   * Client click options.
    */
   client: Client;
   /**
-   * A mutation object that is responsible for customizing an element on pseudo events
+   * A mutation object that is responsible for customizing an element on pseudo events.
    */
   mutation: Mutation;
   /**
-   * Time function
+   * Time function.
    */
   timing: TimingFunction;
   /**
-   * Reversible time function
+   * Reversible time function.
    */
   reverse: (timing: TimingFunction) => TimingFunction;
   /**
-   * A class for working with animations
+   * A class for working with animations.
    */
   animate: typeof Animate;
   /**
-   * Optimize the switching process by performing it only when the user sees it
+   * Optimize the switching process by performing it only when the user sees it.
    */
   optimize: boolean;
 }

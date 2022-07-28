@@ -97,6 +97,7 @@ export default class SideSlider {
          */
         this.autoplay = {
             isFlushed: false,
+            canFlushed: false,
             reverse: false,
             delayedStart: {
                 id: null,
@@ -135,7 +136,7 @@ export default class SideSlider {
             isForced: false,
             startTime: 0,
         };
-        this.direction = new direction({ wrapper });
+        this.direction = new direction(wrapper);
         this.windowWidth = globalThis.scrollX + document.documentElement.clientWidth;
         merge(this.options, options || {});
     }
@@ -168,15 +169,24 @@ export default class SideSlider {
                 this.autoplay.delayPercent = this.calculateDelayFromOther(clientOptions);
             }
             if (autoplayOptions.active === true) {
-                if (optimize === true && isVisible(this.direction.getWrapper()) === false) {
-                    const optimizeAutoplay = () => {
-                        if (isVisible(this.direction.getWrapper()) === false) {
-                            setTimeout(optimizeAutoplay, autoplayOptions.duration);
-                            return;
+                if (optimize === true) {
+                    let isInitial = false;
+                    const observer = new IntersectionObserver(([entity]) => {
+                        if ((entity === null || entity === void 0 ? void 0 : entity.isIntersecting) === true) {
+                            this.autoplay.canFlushed = true;
+                            if (isInitial === false) {
+                                this.triggerAutoplay(autoplayOptions.reverse);
+                                isInitial = true;
+                            }
+                            else {
+                                this.flushAutoplay();
+                            }
                         }
-                        this.triggerAutoplay(autoplayOptions.reverse);
-                    };
-                    setTimeout(optimizeAutoplay, autoplayOptions.duration);
+                        else {
+                            this.autoplay.canFlushed = false;
+                        }
+                    });
+                    observer.observe(this.direction.getWrapper());
                 }
                 else {
                     this.triggerAutoplay(autoplayOptions.reverse);
@@ -406,17 +416,6 @@ export default class SideSlider {
         this.nextSlideItem.isForced = false;
         this.current = this.next;
         this.flushClientClick();
-        if (this.options.optimize === true && isVisible(this.direction.getWrapper()) === false) {
-            const optimizeAutoplay = () => {
-                if (isVisible(this.direction.getWrapper()) === false) {
-                    setTimeout(optimizeAutoplay, this.options.autoplay.duration);
-                    return;
-                }
-                this.flushAutoplay();
-            };
-            setTimeout(optimizeAutoplay, this.options.autoplay.duration);
-            return;
-        }
         this.flushAutoplay();
     }
     /**
@@ -498,8 +497,11 @@ export default class SideSlider {
      */
     flushAutoplay() {
         return __awaiter(this, void 0, void 0, function* () {
-            const options = this.options.autoplay;
-            if (options.active === false || this.autoplay.isFlushed === true || this.client.isFlushed === true) {
+            const { autoplay: options, optimize } = this.options;
+            if (options.active === false ||
+                this.autoplay.isFlushed === true ||
+                this.client.isFlushed === true ||
+                (optimize === true && this.autoplay.canFlushed === false)) {
                 return;
             }
             this.autoplay.isFlushed = true;
@@ -614,7 +616,7 @@ export default class SideSlider {
             item.classList.remove("is-click");
         });
         const keys = Object.getOwnPropertyNames(mutation);
-        if (keys.every((item) => mutation[item] instanceof Function)) {
+        if (keys.every((item) => mutation[item] instanceof Function) === false) {
             throw new Error("Mutations must be functions.");
         }
     }

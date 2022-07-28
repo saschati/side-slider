@@ -3,19 +3,19 @@ import Animate from "../../../animate/animate";
 
 export default interface Client {
   /**
-   * Determines whether the work of clicks to the client has been completed
+   * Determines whether the work of clicks to the client has been completed.
    */
   isFlushed: boolean;
   /**
-   * A click data object
+   * A click data object.
    */
   click: Click;
   /**
-   * List of main element animations
+   * List of main element animations.
    */
   runnerAnimations: Array<Animate>;
   /**
-   * List of animations of neighboring elements
+   * List of animations of neighboring elements.
    */
   nextAnimations: Array<Animate>;
 }

@@ -29,7 +29,7 @@ export default [
      * Turn from 90 degrees to 0.
      */
     draw: function (info: Info, progress: number): void {
-      info.getCurrent().style.transform = `translate(${info.getSiblingDistance()}px, 0) rotateY(-${rotate(
+      info.getCurrent().style.transform = `translate(${info.getSiblingDistance()}px, 0) rotateY(${rotate(
         progress
       )}deg)`;
     },

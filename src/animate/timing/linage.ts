@@ -1,8 +1,5 @@
 /**
- * Linear time function
- *
- * @param {number} timeFraction
- * @return {number}
+ * Linear time function.
  */
 export default function linage(timeFraction: number): number {
   return timeFraction;

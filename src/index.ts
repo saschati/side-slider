@@ -5,9 +5,9 @@ import Client from "./chunk/vo/client/client";
 import NextSlideItem from "./chunk/vo/next-slide-item";
 import CalculateDelay from "./chunk/vo/options/calculate-delay";
 import {
-  AnimationFunction,
-  AnimationNextArrayObject,
-  AnimationRunnerArrayObject,
+  type AnimationFunction,
+  type AnimationNextArrayObject,
+  type AnimationRunnerArrayObject,
   type AnimationNext,
   type AnimationRunner,
 } from "./types/side-slider";
@@ -146,6 +146,7 @@ export default class SideSlider {
    */
   protected autoplay: Autoplay = {
     isFlushed: false,
+    canFlushed: false,
 
     reverse: false,
 
@@ -206,6 +207,9 @@ export default class SideSlider {
    */
   protected direction: Side;
 
+  /**
+   * Horizontal window size.
+   */
   protected windowWidth: number;
 
   constructor({
@@ -217,7 +221,7 @@ export default class SideSlider {
     direction: typeof Side;
     options?: Options;
   }) {
-    this.direction = new (direction as any)({ wrapper });
+    this.direction = new (direction as typeof Right)(wrapper);
     this.windowWidth = globalThis.scrollX + document.documentElement.clientWidth;
 
     merge(this.options, options || {});
@@ -260,18 +264,25 @@ export default class SideSlider {
     }
 
     if (autoplayOptions.active === true) {
-      if (optimize === true && isVisible(this.direction.getWrapper()) === false) {
-        const optimizeAutoplay = () => {
-          if (isVisible(this.direction.getWrapper()) === false) {
-            setTimeout(optimizeAutoplay, autoplayOptions.duration);
+      if (optimize === true) {
+        let isInitial: boolean = false;
+        const observer: IntersectionObserver = new IntersectionObserver(([entity]: IntersectionObserverEntry[]) => {
+          if (entity?.isIntersecting === true) {
+            this.autoplay.canFlushed = true;
 
-            return;
+            if (isInitial === false) {
+              this.triggerAutoplay(autoplayOptions.reverse);
+
+              isInitial = true;
+            } else {
+              this.flushAutoplay();
+            }
+          } else {
+            this.autoplay.canFlushed = false;
           }
+        });
 
-          this.triggerAutoplay(autoplayOptions.reverse);
-        };
-
-        setTimeout(optimizeAutoplay, autoplayOptions.duration);
+        observer.observe(this.direction.getWrapper());
       } else {
         this.triggerAutoplay(autoplayOptions.reverse);
       }
@@ -587,21 +598,6 @@ export default class SideSlider {
     this.current = this.next;
 
     this.flushClientClick();
-    if (this.options.optimize === true && isVisible(this.direction.getWrapper()) === false) {
-      const optimizeAutoplay = () => {
-        if (isVisible(this.direction.getWrapper()) === false) {
-          setTimeout(optimizeAutoplay, this.options.autoplay.duration);
-
-          return;
-        }
-
-        this.flushAutoplay();
-      };
-
-      setTimeout(optimizeAutoplay, this.options.autoplay.duration);
-
-      return;
-    }
     this.flushAutoplay();
   }
 
@@ -713,9 +709,14 @@ export default class SideSlider {
    * Start the autoplay processing.
    */
   protected async flushAutoplay(): Promise<void> {
-    const options = this.options.autoplay;
+    const { autoplay: options, optimize } = this.options;
 
-    if (options.active === false || this.autoplay.isFlushed === true || this.client.isFlushed === true) {
+    if (
+      options.active === false ||
+      this.autoplay.isFlushed === true ||
+      this.client.isFlushed === true ||
+      (optimize === true && this.autoplay.canFlushed === false)
+    ) {
       return;
     }
 
@@ -744,10 +745,10 @@ export default class SideSlider {
     if (subject.animates instanceof Function) {
       const timing = isReverse === true ? this.options.reverse(this.options.timing) : this.options.timing;
 
-      const animation = new (this.options.animate as any)({
+      const animation = new (this.options.animate as typeof Animate)({
         duration: duration,
         timing: timing,
-        draw: subject.animates,
+        draw: <AnimationFunction>subject.animates,
       });
 
       collection.unshift(animation);
@@ -870,7 +871,7 @@ export default class SideSlider {
 
     const keys = Object.getOwnPropertyNames(mutation);
 
-    if (keys!.every((item) => mutation[item as keyof typeof mutation] instanceof Function)) {
+    if (keys!.every((item) => mutation[item as keyof typeof mutation] instanceof Function) === false) {
       throw new Error("Mutations must be functions.");
     }
   }

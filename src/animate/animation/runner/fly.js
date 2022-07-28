@@ -1,6 +1,6 @@
 import round from "lodash/round";
 /**
- * @param {boolean} right Flight direction.
+ * @param right Flight direction.
  */
 export default function (right = true) {
     const move = right ? "" : "-";

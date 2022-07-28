@@ -8,7 +8,7 @@ export default [
          * Element reduction animation.
          */
         draw: function (info, progress) {
-            info.getCurrent().style.transform = `scale(-${percent(progress)})`;
+            info.getCurrent().style.transform = `scale(${percent(progress)})`;
         },
     },
     {
@@ -18,7 +18,7 @@ export default [
          * Animation of increasing the element at the end point.
          */
         draw: function (info, progress) {
-            info.getCurrent().style.transform = `translate(${info.getSiblingDistance()}px, 0) scale(-${percent(progress)})`;
+            info.getCurrent().style.transform = `translate(${info.getSiblingDistance()}px, 0) scale(${percent(progress)})`;
         },
     },
 ];

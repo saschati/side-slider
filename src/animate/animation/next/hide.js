@@ -3,7 +3,7 @@ import run from "./run";
 import linage from "../../timing/linage";
 import reverse from "../../timing/reverse";
 /**
- * Animation of hiding an element
+ * Animation of hiding an element.
  */
 function hide(info, progress) {
     info.getCurrent().style.opacity = `${percent(progress)}`;

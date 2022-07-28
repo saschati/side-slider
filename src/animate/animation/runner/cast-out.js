@@ -1,7 +1,7 @@
 import round from "lodash/round";
 import percent from "../../helpers/percent";
 /**
- * @param {boolean} right The direction in which to throw the element.
+ * @param right The direction in which to throw the element.
  */
 export default function (right = true) {
     let minus = right ? "" : "-";
